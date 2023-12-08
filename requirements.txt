@@ -1,0 +1,7 @@
+seaborn
+numpy
+matplotlib
+rich
+simple-term-menu
+networkx
+pyvis

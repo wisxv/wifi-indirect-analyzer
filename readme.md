@@ -67,7 +67,7 @@ Collect data to analyze
 The preferred way of collecting data is to use ``channel_hopping.sh`` script which is a brief re-write of 
 [this article](https://netbeez.net/blog/linux-channel-hopping-wifi-packet-capturing/)
 because airodump-ng doesn't save Radio Tap headers and tcpdump by itself doesn't perform channel hopping.
-Probably you should re-write script for your hardware if supported channels/channel width are different.
+Probably you should re-write script for your hardware if supported channels/width are different.
 
 For example:
 ~~~

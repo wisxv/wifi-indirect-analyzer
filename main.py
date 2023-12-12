@@ -33,12 +33,12 @@ def main():
             while not import_menu_back:
                 import_menu_items = list_files()
                 import_menu = Tm(import_menu_items, title='Choose files:', clear_screen=True, multi_select=True)
-                import_sel_index = import_menu.show()
+                import_sel_id = import_menu.show()
 
-                if import_sel_index is None:
+                if import_sel_id is None:
                     import_menu_back = True
                 else:
-                    import_sel = [import_menu_items[i] for i in import_sel_index]
+                    import_sel = [import_menu_items[i] for i in import_sel_id]
                     print('Selecting:')
                     [print(f'    {i}') for i in import_sel]
                     inp = Confirm.ask(f'Continue?')
@@ -57,10 +57,10 @@ def main():
             import_menu_back = False
         elif selection_main == 1:
             statistics = Statistics(parser)
-            panel = Panel('[#22ff31]⬤[/#22ff31] - AP\n'
-                          '[#22f0ff]⬤[/#22f0ff] - station\n'
-                          '[#ff9f22]⬤[/#ff9f22] - requested AP\n'
-                          '[#ff3222]⬤[/#ff3222] - hidden AP',
+            panel = Panel('[#22ff31]o[/#22ff31] - AP\n'
+                          '[#22f0ff]o[/#22f0ff] - station\n'
+                          '[#ff9f22]o[/#ff9f22] - requested AP\n'
+                          '[#ff3222]o[/#ff3222] - hidden AP',
                           title='LEGEND', box=ROUNDED,)
             rprint(panel)
             inp = Confirm.ask(f'\nContinue?')
@@ -72,19 +72,23 @@ def main():
             statistics.heatmap()
         elif selection_main == 3:
             statistics = Statistics(parser)
-            statistics.reorder_sta_by_weekdays()
-            stations_menu_items = statistics.stations_available()
-            if len(stations_menu_items) > 0:
-                stations_menu = Tm(stations_menu_items, title='Select station:', clear_screen=True)
-                stations_sel_index = stations_menu.show()
-                if stations_sel_index is not None:
-                    ap_menu_items = statistics.aps_available_for_station(stations_menu_items[stations_sel_index])
+            statistics.reorder_sta_weeks()
+            sta_menu_items = statistics.stations_available()
+            if len(sta_menu_items) > 0:
+                stations_menu = Tm(sta_menu_items, title='Select station:', clear_screen=True)
+                sta_sel_id = stations_menu.show()
+                if sta_sel_id is not None:
+                    ap_menu_items = statistics.aps_available(
+                        sta_menu_items[sta_sel_id]
+                    )
                     if len(ap_menu_items) > 0:
                         ap_menu = Tm(ap_menu_items, title='Select Access Point:', clear_screen=True)
                         ap_menu_index = ap_menu.show()
                         if ap_menu_index is not None:
-                            statistics.week_probability_plot(stations_menu_items[stations_sel_index],
-                                                             ap_menu_items[ap_menu_index])
+                            statistics.week_probability_plot(
+                                sta_menu_items[sta_sel_id],
+                                ap_menu_items[ap_menu_index]
+                            )
                         else:
                             print('No ap selected or Noting to do')
                             time.sleep(2)

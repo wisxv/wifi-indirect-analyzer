@@ -1,4 +1,4 @@
-import decimal
+import decimal as dec
 import os
 import subprocess
 import time
@@ -236,29 +236,29 @@ class Parser:
                         ap_bssid, ap_ssid = i
                     for f in data:
                         f_time, src, dst = f
-                        station_mac = None
+                        sta_mac = None
                         if ap_bssid == src:
-                            station_mac = dst
+                            sta_mac = dst
                         elif ap_bssid == dst:
-                            station_mac = src
+                            sta_mac = src
 
                         # There can be multiple aps for each station
                         # Also count frames/unix_time_minute
-                        if station_mac is not None:
-                            minutes_from_epoch = int(f_time) // 60
-                            if not (station_mac in self.stations):
-                                self.stations[station_mac] = {}
-                                self.stations[station_mac][i] = {}
-                                self.stations[station_mac][i][minutes_from_epoch] = 1
-                            elif station_mac in self.stations:
-                                if not (i in self.stations[station_mac]):
-                                    self.stations[station_mac][i] = {}
-                                    self.stations[station_mac][i][minutes_from_epoch] = 1
+                        if sta_mac is not None:
+                            unix_t_min = int(f_time) // 60
+                            if not (sta_mac in self.stations):
+                                self.stations[sta_mac] = {}
+                                self.stations[sta_mac][i] = {}
+                                self.stations[sta_mac][i][unix_t_min] = 1
+                            elif sta_mac in self.stations:
+                                if not (i in self.stations[sta_mac]):
+                                    self.stations[sta_mac][i] = {}
+                                    self.stations[sta_mac][i][unix_t_min] = 1
                                 else:
-                                    if minutes_from_epoch in self.stations[station_mac][i]:
-                                        self.stations[station_mac][i][minutes_from_epoch] += 1
+                                    if unix_t_min in self.stations[sta_mac][i]:
+                                        self.stations[sta_mac][i][unix_t_min] += 1
                                     else:
-                                        self.stations[station_mac][i][minutes_from_epoch] = 1
+                                        self.stations[sta_mac][i][unix_t_min] = 1
 
             if len(self.aps_requested) > 0:
                 for note in self.aps_requested:
@@ -302,9 +302,9 @@ class Statistics:
         self.stations = parser.stations
         self.channels = parser.channels
         self.packets_counter = parser.packets_counter
-        self.probability_reordered_sta = dict()
+        self.prob_reordered_sta = dict()
         self.fixed_ap_struct_str = tuple()
-        self.fixed_ap_struct_tuple = None
+        self.fixed_ap_struct = None
 
     def graph(self, parse_pwr=False, radial=False) -> None:
         def generate_next_integer():
@@ -417,7 +417,7 @@ class Statistics:
         fig.savefig('heatmap.png', bbox_inches='tight')
         plt.show()
 
-    def reorder_sta_by_weekdays(self) -> None:
+    def reorder_sta_weeks(self) -> None:
         """
         Rebuild stations dictionary this way: {'<station>':{'<ap>':{<day_of_the_week>: <count>, ...}, ...}, ...}
         """
@@ -436,19 +436,19 @@ class Statistics:
                             ap_renamed_utf8 = (ap_note[0], bytes.fromhex(ap_note[1]).decode('utf-8', 'ignore'))
                         except TypeError:
                             ap_renamed_utf8 = (ap_note[0], '<unknown>')
-                        if sta in self.probability_reordered_sta:
-                            self.probability_reordered_sta[sta][ap_renamed_utf8] = counted_week_days
+                        if sta in self.prob_reordered_sta:
+                            self.prob_reordered_sta[sta][ap_renamed_utf8] = counted_week_days
                         else:
-                            self.probability_reordered_sta[sta] = {}
-                            self.probability_reordered_sta[sta][ap_renamed_utf8] = counted_week_days
+                            self.prob_reordered_sta[sta] = {}
+                            self.prob_reordered_sta[sta][ap_renamed_utf8] = counted_week_days
 
     def stations_available(self) -> list:
-        return list(self.probability_reordered_sta.keys())
+        return list(self.prob_reordered_sta.keys())
 
-    def aps_available_for_station(self, station: str) -> tuple:
+    def aps_available(self, station: str) -> tuple:
         # convert ap notes (tuple) to (str) TODO pwr support
-        self.fixed_ap_struct_tuple = tuple(self.probability_reordered_sta[station].keys())
-        self.fixed_ap_struct_str = tuple(f'{i[0]} - {i[1]}' for i in self.fixed_ap_struct_tuple)
+        self.fixed_ap_struct = tuple(self.prob_reordered_sta[station].keys())
+        self.fixed_ap_struct_str = tuple(f'{i[0]} - {i[1]}' for i in self.fixed_ap_struct)
 
         return self.fixed_ap_struct_str
 
@@ -457,16 +457,18 @@ class Statistics:
         Draw a plot of Probability distribution of appearance selected STA for selected AP
         Using: P = <day_of_the_week_count> / <all_the_time_count>
         """
-        selected_ap_index = self.fixed_ap_struct_str.index(ap)
-        selected_ap = self.fixed_ap_struct_tuple[selected_ap_index]
+        selected_ap_id = self.fixed_ap_struct_str.index(ap)
+        selected_ap = self.fixed_ap_struct[selected_ap_id]
         days_of_the_week = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')
         x_y_dict = {x: 0 for x in days_of_the_week}
-        decimal.getcontext().prec = 10
-        for day, count in (self.probability_reordered_sta[station][selected_ap]).items():
+        dec.getcontext().prec = 10
+        for day, count in (self.prob_reordered_sta[station][selected_ap]).items():
             if day in x_y_dict:
-                probability = decimal.Decimal(decimal.Decimal(count) / (
-                    decimal.Decimal(sum(self.probability_reordered_sta[station][selected_ap].values()))))
-                two_places = decimal.Decimal('0.01')
+                probability = dec.Decimal(dec.Decimal(count) /
+                    (dec.Decimal(sum(
+                        self.prob_reordered_sta[station][selected_ap].values()
+                    ))))
+                two_places = dec.Decimal('0.01')
                 probability = probability.quantize(two_places)
                 x_y_dict[day] = probability
         probabilities = [x_y_dict[i] for i in days_of_the_week]
@@ -475,6 +477,8 @@ class Statistics:
         plt.xlabel('Day')
         plt.ylabel('Probability')
         plt.title(f'Probability distribution of appearance \nSTA {station}\nfor AP {ap}\nweekly')
-        filename = ''.join(f'device_{station}_for_ap_{ap}_probability_distribution'.split(':'))
+        filename = ''.join(
+            f'device_{station}_for_ap_{ap}_probability_distribution'.split(':')
+            )
         plt.savefig(f'{filename}.png', bbox_inches='tight')
         plt.show()

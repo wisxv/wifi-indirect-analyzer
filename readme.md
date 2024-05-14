@@ -64,16 +64,16 @@ Collect data to analyze
     Sometimes you also should do: ``rfkill unblock wifi`` before setting the device up
 3. Collect frames with tcpdump / airodump-ng / etc.
 
-The preferred way of collecting data is to use ``channel_hopping.sh`` script which is a brief re-write of 
-[this article](https://netbeez.net/blog/linux-channel-hopping-wifi-packet-capturing/)
-because airodump-ng doesn't save Radio Tap headers and tcpdump by itself doesn't perform channel hopping.
-Probably you should re-write script for your hardware if supported channels/width are different.
+  The preferred way of collecting data is to use ``channel_hopping.sh`` script which is a brief re-write of 
+  [this article](https://netbeez.net/blog/linux-channel-hopping-wifi-packet-capturing/)
+  because airodump-ng doesn't save Radio Tap headers and tcpdump by itself doesn't perform channel hopping.
+  Probably you should re-write script for your hardware if supported channels/width are different.
 
-For example:
-~~~
-$ chmod +x channel_hopping.sh
-$ ./channel_hopping.sh  HT20 wlan0
+  For example:
+  ~~~
+  $ chmod +x channel_hopping.sh
+  $ ./channel_hopping.sh  HT20 wlan0
 
-# anoter terminal tab:
-$ sudo tcpdump -i <device> -w /path/to/save.pcap
-~~~
+  # anoter terminal tab:
+  $ sudo tcpdump -i <device> -w /path/to/save.pcap
+  ~~~
